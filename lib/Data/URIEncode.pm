@@ -22,17 +22,17 @@ sub flat_to_complex {
     while (my($key, $val) = each %$in) {
 
         ### normal keys
-        if ($key !~ /^\s*\w+ (?: \s*[.:]\s* \w+)+ \s*$/x) {
+        if ($key !~ /^[^.:]* (?: [.:] [^.:]*)+ $/x) {
             $out->{$key} = $val;
             next;
         }
 
         # looks like foo.0.bar which would map to foo => [{bar => $val}]
         my $copy = $key;
-        $copy =~ s/^\s* (\w+) //x;
+        $copy =~ s/^([^.:]*) //x;
         my $name = $1;
         my $ref  = $out;
-        while ($copy =~ s/^ \s*([.:])\s* (\w+)//x) {
+        while ($copy =~ s/^ ([.:]) ([^.:]*)//x) {
             my ($sep, $next) = ($1, $2);
             if (ref $ref eq 'HASH') {
                 if (! exists $ref->{$name}) {
