@@ -7,7 +7,7 @@
 =cut
 
 use strict;
-use Test::More tests => 55;
+use Test::More tests => 56;
 
 use_ok('URLEncode');
 
@@ -32,6 +32,7 @@ ok(URLEncode::flat_to_complex({'foo.0.2'     => 'a'})->{'foo'}->{'0'}{'2'} eq 'a
 ok(URLEncode::flat_to_complex({'foo.'        => 'a'})->{'foo'}->{''}       eq 'a', 'key: (foo.)');
 ok(URLEncode::flat_to_complex({'.foo'        => 'a'})->{'foo'}             eq 'a', 'key: (.foo)');
 ok(URLEncode::flat_to_complex({'"".foo'      => 'a'})->{''}->{'foo'}       eq 'a', 'key: ("".foo)');
+ok(URLEncode::flat_to_complex({'..foo'       => 'a'})->{''}->{'foo'}       eq 'a', 'key: (..foo)');
 ok(URLEncode::flat_to_complex({'foo..bar'    => 'a'})->{'foo'}{''}{'bar'}  eq 'a', 'key: (foo..bar)');
 ok(URLEncode::flat_to_complex({' '           => 'a'})->{' '}               eq 'a', 'key: ( )');
 ok(URLEncode::flat_to_complex({' . '         => 'a'})->{' '}->{' '}        eq 'a', 'key: ( . )');
