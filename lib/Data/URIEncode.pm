@@ -132,4 +132,23 @@ sub _flatten_escape {
 
 ###----------------------------------------------------------------###
 
+sub complex_to_query {
+    my $flat = complex_to_flat(@_);
+    return join "&", map {
+        my $key = $_;
+        my $val = $flat->{$_};
+        foreach ($key, $val) {
+            s/([^\w.\-\ \:])/sprintf('%%%02X', ord $1)/eg;
+            y/ /+/;
+        }
+        "$_=$val";
+    } sort keys %$flat;
+}
+
+sub _encode {
+
+}
+
+###----------------------------------------------------------------###
+
 1;
