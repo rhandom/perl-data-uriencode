@@ -14,7 +14,8 @@ use vars qw($MAX_ARRAY_EXPAND
             );
 
 BEGIN {
-    $MAX_ARRAY_EXPAND = 100;
+    $MAX_ARRAY_EXPAND  = 100;
+    $DUMP_BLESSED_DATA = 1 if ! defined $DUMP_BLESSED_DATA;
     $qr_chunk = '([^.:]*)';
     $qr_chunk_quoted = '"((?:[^"]*|\\\\")+)(?<!\\\\)(")';
 }
