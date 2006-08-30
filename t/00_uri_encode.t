@@ -7,6 +7,7 @@
 =cut
 
 use strict;
+use warnings;
 use Test::More tests => 92;
 
 use_ok('URLEncode');
@@ -105,6 +106,7 @@ ok(URLEncode::complex_to_flat([0, 1, 2, 'a'               ])->{':3'}          eq
 
 Foo: {
     local $URLEncode::DUMP_BLESSED_DATA;
+    $URLEncode::DUMP_BLESSED_DATA = 0;
     ok(! eval { URLEncode::complex_to_flat(bless [], 'main') }, "Couldn't flatten: ($@)");
     ok(! eval { URLEncode::complex_to_flat(bless {}, 'main') }, "Couldn't flatten: ($@)");
 };
