@@ -90,14 +90,44 @@ sub complex_to_flat {
     my $in     = shift;
     my $out    = shift || {};
     my $prefix = shift;
-    my $is_top;
-    if (! defined $prefix || $prefix eq '') {
-        $prefix = '';
-        $is_top = 1;
+    $prefix = '' if ! defined $prefix;
+
+    if (UNIVERSAL::isa($in, 'ARRAY')) {
+        die "Not handling blessed ARRAY" if ref $in ne 'ARRAY';
+        foreach my $i (0 .. $#$in) {
+            if (ref $in->[$i]) {
+                complex_to_flat($in->[$i], $out, "$prefix:"._flatten_escape($i));
+            } elsif (defined $in->[$i] || $i == $#$in) {
+                my $key = "$prefix:"._flatten_escape($i);
+                $key =~ s/^\.//; # leading . is not necessary (it is the default)
+                $out->{$key} = $in->[$i];
+            }
+        }
+    } elsif (UNIVERSAL::isa($in, 'HASH')) {
+        die "Not handling blessed HASH" if ref $in ne 'HASH';
+        while (my($key, $val) = each %$in) {
+            if (ref $val) {
+                complex_to_flat($val, $out, "$prefix."._flatten_escape($key));
+            } else {
+                $key = "$prefix."._flatten_escape($key);
+                $key =~ s/^\.//; # leading . is not necessary (it is the default)
+                $out->{$key} = $val;
+            }
+        }
+    } else {
+        die "Not sure how to handle that type ($in)";
     }
 
-
     return $out;
+}
+
+sub _flatten_escape {
+    my $val = shift;
+    return undef if ! defined $val;
+    return '""'  if ! length $val;
+    return $val  if $val !~ /[.:\"]/;
+    $val =~ s/\"/\\\"/g;
+    return '"'.$val.'"';
 }
 
 ###----------------------------------------------------------------###
