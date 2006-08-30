@@ -117,6 +117,7 @@ sub complex_to_flat {
             }
         }
     } else {
+        die "Need a hash or array" if ! defined $in;
         die "Not sure how to handle that type ($in)";
     }
 
