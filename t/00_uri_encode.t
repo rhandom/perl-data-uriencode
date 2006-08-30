@@ -109,11 +109,14 @@ ok(! eval { URLEncode::complex_to_flat(sub {}) },           "Couldn't flatten: (
 ok(! eval { URLEncode::complex_to_flat(undef) },            "Couldn't flatten: ($@)");
 ok(! eval { URLEncode::complex_to_flat('undef') },          "Couldn't flatten: ($@)");
 
-ok(URLEncode::complex_to_query(['a','b']) eq ':0=a&:1=b', ':0=a&:1=b');
-ok(URLEncode::complex_to_query({'a','b'}) eq 'a=b', 'a=b');
-ok(URLEncode::complex_to_query({x => {y => ['a','b'], z => 1}}) eq 'x.y:0=a&x.y:1=b&x.z=1', 'x.y:0=a&x.y:1=b&x.z=1');
+SKIP: {
+    skip("No CGI found", 6) if ! eval { require CGI };
 
-ok(URLEncode::query_to_complex(':0=a&:1=b'            )->[1]               eq 'b', ':0=a&:1=b');
-ok(URLEncode::query_to_complex('a=b'                  )->{'a'}             eq 'b', 'a=b');
-ok(URLEncode::query_to_complex('x.y:0=a&x.y:1=b&x.z=1')->{'x'}->{'y'}->[1] eq 'b', 'x.y:0=a&x.y:1=b&x.z=1');
+    ok(URLEncode::complex_to_query(['a','b']) eq ':0=a&:1=b', ':0=a&:1=b');
+    ok(URLEncode::complex_to_query({'a','b'}) eq 'a=b', 'a=b');
+    ok(URLEncode::complex_to_query({x => {y => ['a','b'], z => 1}}) eq 'x.y:0=a&x.y:1=b&x.z=1', 'x.y:0=a&x.y:1=b&x.z=1');
 
+    ok(URLEncode::query_to_complex(':0=a&:1=b'            )->[1]               eq 'b', ':0=a&:1=b');
+    ok(URLEncode::query_to_complex('a=b'                  )->{'a'}             eq 'b', 'a=b');
+    ok(URLEncode::query_to_complex('x.y:0=a&x.y:1=b&x.z=1')->{'x'}->{'y'}->[1] eq 'b', 'x.y:0=a&x.y:1=b&x.z=1');
+};
