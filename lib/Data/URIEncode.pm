@@ -138,6 +138,7 @@ sub complex_to_query {
         my $key = $_;
         my $val = $flat->{$_};
         foreach ($key, $val) {
+            $_ = '' if ! defined;
             s/([^\w.\-\ \:])/sprintf('%%%02X', ord $1)/eg;
             y/ /+/;
         }
