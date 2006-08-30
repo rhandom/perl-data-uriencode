@@ -8,6 +8,7 @@ URLEncode - utilities for handling data passed via URL
 
 use strict;
 use vars qw($MAX_ARRAY_EXPAND
+            $DUMP_BLESSED_DATA
             $qr_chunk
             $qr_chunk_quoted
             );
@@ -93,7 +94,7 @@ sub complex_to_flat {
     $prefix = '' if ! defined $prefix;
 
     if (UNIVERSAL::isa($in, 'ARRAY')) {
-        die "Not handling blessed ARRAY" if ref $in ne 'ARRAY';
+        die "Not handling blessed ARRAY" if ref $in ne 'ARRAY' && ! $DUMP_BLESSED_DATA;
         foreach my $i (0 .. $#$in) {
             if (ref $in->[$i]) {
                 complex_to_flat($in->[$i], $out, "$prefix:"._flatten_escape($i));
@@ -104,7 +105,7 @@ sub complex_to_flat {
             }
         }
     } elsif (UNIVERSAL::isa($in, 'HASH')) {
-        die "Not handling blessed HASH" if ref $in ne 'HASH';
+        die "Not handling blessed HASH" if ref $in ne 'HASH' && ! $DUMP_BLESSED_DATA;
         while (my($key, $val) = each %$in) {
             if (ref $val) {
                 complex_to_flat($val, $out, "$prefix."._flatten_escape($key));
