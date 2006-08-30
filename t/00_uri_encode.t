@@ -103,8 +103,12 @@ ok(URLEncode::complex_to_flat({'""'  => 'a'               })->{'"\"\""'}      eq
 ok(URLEncode::complex_to_flat({''    => 'a'               })->{'""'}          eq 'a', 'key: ("")');
 ok(URLEncode::complex_to_flat([0, 1, 2, 'a'               ])->{':3'}          eq 'a', 'key: (:3)');
 
-ok(! eval { URLEncode::complex_to_flat(bless [], 'main') }, "Couldn't flatten: ($@)");
-ok(! eval { URLEncode::complex_to_flat(bless {}, 'main') }, "Couldn't flatten: ($@)");
+Foo: {
+    local $URLEncode::DUMP_BLESSED_DATA;
+    ok(! eval { URLEncode::complex_to_flat(bless [], 'main') }, "Couldn't flatten: ($@)");
+    ok(! eval { URLEncode::complex_to_flat(bless {}, 'main') }, "Couldn't flatten: ($@)");
+};
+
 ok(! eval { URLEncode::complex_to_flat(sub {}) },           "Couldn't flatten: ($@)");
 ok(! eval { URLEncode::complex_to_flat(undef) },            "Couldn't flatten: ($@)");
 ok(! eval { URLEncode::complex_to_flat('undef') },          "Couldn't flatten: ($@)");
