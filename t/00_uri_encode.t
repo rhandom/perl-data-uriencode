@@ -7,7 +7,7 @@
 =cut
 
 use strict;
-use Test::More tests => 86;
+use Test::More tests => 89;
 
 use_ok('URLEncode');
 
@@ -108,3 +108,7 @@ ok(! eval { URLEncode::complex_to_flat(bless {}, 'main') }, "Couldn't flatten: (
 ok(! eval { URLEncode::complex_to_flat(sub {}) },           "Couldn't flatten: ($@)");
 ok(! eval { URLEncode::complex_to_flat(undef) },            "Couldn't flatten: ($@)");
 ok(! eval { URLEncode::complex_to_flat('undef') },          "Couldn't flatten: ($@)");
+
+ok(URLEncode::complex_to_query(['a','b']) eq ':0=a&:1=b', ':0=a&:1=b');
+ok(URLEncode::complex_to_query({'a','b'}) eq 'a=b', 'a=b');
+ok(URLEncode::complex_to_query({x => {y => ['a','b'], z => 1}}) eq 'x.y:0=a&x.y:1=b&x.z=1', 'x.y:0=a&x.y:1=b&x.z=1');
