@@ -145,6 +145,22 @@ sub complex_to_query {
     } sort keys %$flat;
 }
 
+sub query_to_complex {
+    my $str = shift;
+    return {} if ! defined $str;
+
+    require CGI;
+    my $q = CGI->new(\$str);
+
+    my %hash = ();
+    foreach my $key ($q->param) {
+        my @val = $q->param($key);
+        $hash{$key} = ($#val <= 0) ? $val[0] : \@val;
+    }
+
+    return flat_to_complex(\%hash);
+}
+
 ###----------------------------------------------------------------###
 
 1;
