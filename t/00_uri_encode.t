@@ -7,7 +7,7 @@
 =cut
 
 use strict;
-use Test::More tests => 56;
+use Test::More tests => 86;
 
 use_ok('URLEncode');
 
@@ -24,15 +24,18 @@ ok($out->{'foo'}->[5] eq 'bing', 'foo.5');
 ok(! defined $out->{'foo'}->[4], 'foo.4');
 
 ok(URLEncode::flat_to_complex({'foo'         => 'a'})->{'foo'}             eq 'a', 'key: (foo)');
+ok(URLEncode::flat_to_complex({'0'           => 'a'})->{'0'}               eq 'a', 'key: (0)');
 ok(URLEncode::flat_to_complex({'foo.bar.baz' => 'a'})->{'foo'}{'bar'}{baz} eq 'a', 'key: (foo.bar.baz)');
 ok(URLEncode::flat_to_complex({'foo:0'       => 'a'})->{'foo'}->[0]        eq 'a', 'key: (foo:0)');
 ok(URLEncode::flat_to_complex({'foo:0:2'     => 'a'})->{'foo'}->[0]->[2]   eq 'a', 'key: (foo:0:2)');
 ok(URLEncode::flat_to_complex({'foo.0'       => 'a'})->{'foo'}->{'0'}      eq 'a', 'key: (foo.0)');
 ok(URLEncode::flat_to_complex({'foo.0.2'     => 'a'})->{'foo'}->{'0'}{'2'} eq 'a', 'key: (foo.0.2)');
 ok(URLEncode::flat_to_complex({'foo.'        => 'a'})->{'foo'}->{''}       eq 'a', 'key: (foo.)');
+ok(URLEncode::flat_to_complex({'foo.""'      => 'a'})->{'foo'}->{''}       eq 'a', 'key: (foo."")');
 ok(URLEncode::flat_to_complex({'.foo'        => 'a'})->{'foo'}             eq 'a', 'key: (.foo)');
 ok(URLEncode::flat_to_complex({'"".foo'      => 'a'})->{''}->{'foo'}       eq 'a', 'key: ("".foo)');
 ok(URLEncode::flat_to_complex({'..foo'       => 'a'})->{''}->{'foo'}       eq 'a', 'key: (..foo)');
+ok(URLEncode::flat_to_complex({'."".foo'     => 'a'})->{''}->{'foo'}       eq 'a', 'key: (."".foo)');
 ok(URLEncode::flat_to_complex({'foo..bar'    => 'a'})->{'foo'}{''}{'bar'}  eq 'a', 'key: (foo..bar)');
 ok(URLEncode::flat_to_complex({' '           => 'a'})->{' '}               eq 'a', 'key: ( )');
 ok(URLEncode::flat_to_complex({' . '         => 'a'})->{' '}->{' '}        eq 'a', 'key: ( . )');
@@ -77,3 +80,31 @@ ok(! eval { URLEncode::flat_to_complex({'foo:1' => 'a', 'foo:a' => 'a'}) }, "Cou
 ok(! eval { URLEncode::flat_to_complex({'foo:a' => 'a'                }) }, "Couldn't run - using a for index ($@)");
 ok(! eval { URLEncode::flat_to_complex({':a' => 'a'                   }) }, "Couldn't run - using a for index ($@)");
 
+ok(URLEncode::complex_to_flat({'foo' => 'a'               })->{'foo'}         eq 'a', 'key: (foo)');
+ok(URLEncode::complex_to_flat({'0'   => 'a'               })->{'0'}           eq 'a', 'key: (0)');
+ok(URLEncode::complex_to_flat({'foo' => {'bar' => 'a'}    })->{'foo.bar'}     eq 'a', 'key: (foo.bar)');
+ok(URLEncode::complex_to_flat({'foo' => {bar=>{baz=>'a'}} })->{'foo.bar.baz'} eq 'a', 'key: (foo.bar.baz)');
+ok(URLEncode::complex_to_flat({'foo' => ['a']             })->{'foo:0'}       eq 'a', 'key: (foo:0)');
+ok(URLEncode::complex_to_flat({'foo' => [[0,1,'a']]       })->{'foo:0:2'}     eq 'a', 'key: (foo:0:2)');
+ok(URLEncode::complex_to_flat({'foo' => {'0' => 'a'}      })->{'foo.0'}       eq 'a', 'key: (foo.0)');
+ok(URLEncode::complex_to_flat({'foo' => {'0'=>{'2'=>'a'}} })->{'foo.0.2'}     eq 'a', 'key: (foo.0.2)');
+ok(URLEncode::complex_to_flat({'foo' => {'' => 'a'}       })->{'foo.""'}      eq 'a', 'key: (foo."")');
+ok(URLEncode::complex_to_flat({''    => {'foo' => 'a'}    })->{'"".foo'}      eq 'a', 'key: ("".foo)');
+ok(URLEncode::complex_to_flat({'foo' => {''=>{'bar'=>'a'}}})->{'foo."".bar'}  eq 'a', 'key: (foo."".bar)');
+ok(URLEncode::complex_to_flat({' '   => 'a'               })->{' '}           eq 'a', 'key: ( )');
+ok(URLEncode::complex_to_flat({' '   => {' ' => 'a'}      })->{' . '}         eq 'a', 'key: ( . )');
+ok(URLEncode::complex_to_flat({' '   => {' ' =>{' '=>'a'}}})->{' . . '}       eq 'a', 'key: ( . . )');
+ok(URLEncode::complex_to_flat({'foo' => {'.' => 'a'}      })->{'foo."."'}     eq 'a', 'key: (foo.".")');
+ok(URLEncode::complex_to_flat({'.'   => {'foo' => 'a'}    })->{'".".foo'}     eq 'a', 'key: (".".foo)');
+ok(URLEncode::complex_to_flat({'.'   => 'a'               })->{'"."'}         eq 'a', 'key: (".")');
+ok(URLEncode::complex_to_flat({'.'   => {'.' => 'a'}      })->{'"."."."'}     eq 'a', 'key: (".".".")');
+ok(URLEncode::complex_to_flat({'.'   => {'.'=>{'.'=> 'a'}}})->{'"."."."."."'} eq 'a', 'key: (".".".".".")');
+ok(URLEncode::complex_to_flat({'""'  => 'a'               })->{'"\"\""'}      eq 'a', 'key: ("\"\"")');
+ok(URLEncode::complex_to_flat({''    => 'a'               })->{'""'}          eq 'a', 'key: ("")');
+ok(URLEncode::complex_to_flat([0, 1, 2, 'a'               ])->{':3'}          eq 'a', 'key: (:3)');
+
+ok(! eval { URLEncode::complex_to_flat(bless [], 'main') }, "Couldn't flatten: ($@)");
+ok(! eval { URLEncode::complex_to_flat(bless {}, 'main') }, "Couldn't flatten: ($@)");
+ok(! eval { URLEncode::complex_to_flat(sub {}) },           "Couldn't flatten: ($@)");
+ok(! eval { URLEncode::complex_to_flat(undef) },            "Couldn't flatten: ($@)");
+ok(! eval { URLEncode::complex_to_flat('undef') },          "Couldn't flatten: ($@)");
