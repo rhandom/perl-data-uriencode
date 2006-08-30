@@ -75,7 +75,7 @@ ok(URLEncode::flat_to_complex({'.'            => 'a'})->{''}                eq '
 ok(! eval { URLEncode::flat_to_complex({'.1' => 'a', ':1' => 'a'      }) }, "Can't coerce ($@)");
 ok(! eval { URLEncode::flat_to_complex({'foo.1' => 'a', 'foo:1' => 'a'}) }, "Can't coerce ($@)");
 ok(! eval { URLEncode::flat_to_complex({'foo.1' => 'a', '"foo":1'=>'a'}) }, "Can't coerce ($@)");
-ok(! eval { URLEncode::flat_to_complex({'foo:10000'                   }) }, "Couldn't run - too big ($@)");
+ok(! eval { URLEncode::flat_to_complex({'foo:10000'             => 'a'}) }, "Couldn't run - too big ($@)");
 ok(! eval { URLEncode::flat_to_complex({'foo'   => 'a', 'foo.a' => 'a'}) }, "Couldn't run - overlap of keys ($@)");
 ok(! eval { URLEncode::flat_to_complex({'foo:1' => 'a', 'foo:a' => 'a'}) }, "Couldn't run - using a for index ($@)");
 ok(! eval { URLEncode::flat_to_complex({'foo:a' => 'a'                }) }, "Couldn't run - using a for index ($@)");
