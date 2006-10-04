@@ -151,7 +151,7 @@ sub complex_to_query {
 
 sub query_to_complex {
     my $str = shift;
-    return {} if ! defined $str;
+    return {} if ! defined $str || ! length $str;
 
     require CGI;
     my $q = CGI->new(\$str);
