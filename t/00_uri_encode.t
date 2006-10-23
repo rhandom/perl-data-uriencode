@@ -7,7 +7,7 @@
 =cut
 
 use strict;
-use Test::More tests => 101;
+use Test::More tests => 102;
 
 use_ok('Data::URIEncode', qw(flat_to_complex complex_to_flat query_to_complex complex_to_query));
 
@@ -133,6 +133,7 @@ SKIP: {
     ok(query_to_complex(CGI->new(\ 'a=b'                  ))->{'a'}             eq 'b', 'CGI->new: a=b');
     ok(query_to_complex(CGI->new(\ 'x.y:0=a&x.y:1=b&x.z=1'))->{'x'}->{'y'}->[1] eq 'b', 'CGI->new: x.y:0=a&x.y:1=b&x.z=1');
 
+    ok(! eval { query_to_complex([]) }, "Blew up - not a known type to deal with");
 };
 
 ok(query_to_complex({':0' => 'a', ':1' => 'b'}                   )->[1]               eq 'b', 'hashref: :0=a&:1=b');
