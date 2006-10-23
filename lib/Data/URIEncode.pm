@@ -1,23 +1,28 @@
-package URLEncode;
+package Data::URIEncode;
 
 =head1 NAME
 
-URLEncode - utilities for handling data passed via URL
+Data::URIEncode - Allow complex data structures to be encoded using flat URIs.
 
 =cut
 
 use strict;
-use vars qw($MAX_ARRAY_EXPAND
+use base qw(Exporter);
+use vars qw($VERSION
+            @EXPORT_OK
+            $MAX_ARRAY_EXPAND
             $DUMP_BLESSED_DATA
             $qr_chunk
             $qr_chunk_quoted
             );
 
 BEGIN {
+    $VERSION           = '0.10';
+    @EXPORT_OK         = qw(flat_to_complex complex_to_flat query_to_complex complex_to_query);
     $MAX_ARRAY_EXPAND  = 100;
     $DUMP_BLESSED_DATA = 1 if ! defined $DUMP_BLESSED_DATA;
-    $qr_chunk = '([^.:]*)';
-    $qr_chunk_quoted = '"((?:[^"]*|\\\\")+)(?<!\\\\)(")';
+    $qr_chunk          = '([^.:]*)';
+    $qr_chunk_quoted   = '"((?:[^"]*|\\\\")+)(?<!\\\\)(")';
 }
 
 ###----------------------------------------------------------------###
