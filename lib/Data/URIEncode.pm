@@ -498,6 +498,21 @@ Circular refs are not detected.  Any attempt to dump a struture with
 cirular refs will result in an infinite loop.  There is no immediate plan to
 add circular ref tracking.
 
+=head1 SEE ALSO
+
+All of the following have attempted to solve the same problem as Data::URIEncode.
+All of them (including Data::URIEncode) suffer from the problem of being hard
+to find for the specific purpose.  Hash::Flatten is probably the only suitable
+replacement for Data::URIEncode.
+
+L<Hash::Flatten>
+
+L<CGI::Expand>
+
+L<HTTP::Rollup>
+
+L<CGI::State>
+
 =head1 AUTHOR
 
 Paul Seamons perlspam at seamons dot com
