@@ -150,16 +150,30 @@ sub complex_to_query {
             s/([^\w.\-\ \:])/sprintf('%%%02X', ord $1)/eg;
             y/ /+/;
         }
-        "$_=$val";
+        "$key=$val";
     } sort keys %$flat;
 }
 
 sub query_to_complex {
+    my $q;
     my $str = shift;
-    return {} if ! defined $str || ! length $str;
 
-    require CGI;
-    my $q = CGI->new(\$str);
+    if (! ref $str) { # normal string
+        return {} if ! defined $str || ! length $str;
+        require CGI;
+        $q = CGI->new(\$str);
+
+    } elsif (ref $str eq 'SCALAR') { # ref to a string
+        return {} if ! defined $$str || ! length $$str;
+        require CGI;
+        $q = CGI->new($str);
+
+    } elsif (ref $str eq 'HASH') { # passed a data hash instead
+        return flat_to_complex($str);
+
+    } else { # looks like a blessed object
+        $q = $str;
+    }
 
     my %hash = ();
     foreach my $key ($q->param) {
@@ -173,3 +187,43 @@ sub query_to_complex {
 ###----------------------------------------------------------------###
 
 1;
+
+__END__
+
+=head1 SYNOPSIS
+
+    use Data::URIEncode qw(flat_to_complex complex_to_flat);
+
+    my $data = {
+        foo => {
+            bar => 'bing',
+        },
+        baz => [123],
+    };
+
+    my $flat = complex_to_flat($data);
+
+    # $data looks like:
+    $data = {
+       'foo.bar' => 'bing',
+       'baz:0'   => 123,
+    };
+
+    # put data back to how it was
+    $data = flat_to_complex($flat);
+
+
+    ### some html form somewhere
+
+
+=head1 DESCRIPTION
+
+=head1 AUTHOR
+
+Paul Seamons perlspam at seamons dot com
+
+=head1 LICENSE
+
+This library may be distributed under the same terms as Perl itself.
+
+=cut
