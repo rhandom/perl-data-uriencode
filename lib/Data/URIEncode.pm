@@ -21,8 +21,8 @@ BEGIN {
     @EXPORT_OK         = qw(flat_to_complex complex_to_flat query_to_complex complex_to_query);
     $MAX_ARRAY_EXPAND  = 100;
     $DUMP_BLESSED_DATA = 1 if ! defined $DUMP_BLESSED_DATA;
-    $qr_chunk          = '([^.:]*)';
-    $qr_chunk_quoted   = '"((?:[^"]*|\\\\")+)(?<!\\\\)(")';
+    $qr_chunk          = "([^.:]*)";
+    $qr_chunk_quoted   = "'((?:[^']*|\\\\')+)(?<!\\\\)(')";
 }
 
 ###----------------------------------------------------------------###
@@ -40,7 +40,7 @@ sub flat_to_complex {
         while ($copy =~ s/^ ([.:]) $qr_chunk_quoted//xo
                || $copy =~ s/^ ([.:]) $qr_chunk//xo) {
             my ($sep, $next) = ($1, $2);
-            $next =~ s/\\\"/\"/g if $3;
+            $next =~ s/\\\'/\'/g if $3;
 
             if (ref $ref eq 'ARRAY') {
                 if (! exists $ref->[$name]) {
@@ -132,10 +132,10 @@ sub complex_to_flat {
 sub _flatten_escape {
     my $val = shift;
     return undef if ! defined $val;
-    return '""'  if ! length $val;
-    return $val  if $val !~ /[.:\"]/;
-    $val =~ s/\"/\\\"/g;
-    return '"'.$val.'"';
+    return "''"  if ! length $val;
+    return $val  if $val !~ /[.:\']/;
+    $val =~ s/\'/\\\'/g;
+    return "'".$val."'";
 }
 
 ###----------------------------------------------------------------###
@@ -171,8 +171,11 @@ sub query_to_complex {
     } elsif (ref $str eq 'HASH') { # passed a data hash instead
         return flat_to_complex($str);
 
-    } else { # looks like a blessed object
+    } elsif (UNIVERSAL::can($str, 'param')) { # CGI looking object
         $q = $str;
+
+    } else {
+        die "Not sure how to handle \"$str\" - should pass a string, ref to a string, a hashref, or a CGI compatible object";
     }
 
     my %hash = ();
@@ -214,9 +217,138 @@ __END__
 
 
     ### some html form somewhere
+    <form>
+    <input type="text" name="foo.bar.baz" value="brum">
+    <input type="text" name="bing:2" value="blang">
+    <input type="text" name="'key with :, ., and \''.red" value="blue">
+    </form>
 
+    ### when the form is submitted to the following code
+    use CGI;
+    use Data::URIEncode qw(query_to_complex);
+
+    my $q = CGI->new;
+    my $data = query_to_complex($q);
+
+    ### data will look like
+    $data = {
+        foo => {
+            bar => {
+               baz = "brum",
+            },
+        },
+        bing => [
+            undef,
+            undef,
+            "blang",
+        ],
+        "key with :, ., and '" => {
+            red = "blue",
+        },
+    };
 
 =head1 DESCRIPTION
+
+The world of the web works off of URI's. The Query string portion
+of URIs already support encoding of key/value paired data - they
+just don't natively allow for for complex data structures.
+
+There are modules or encodings that do support arbitrarily complex
+data structures.  JSON, YAML and Data::Dumper all have their own
+way of encoding complex structures.  But then to pass them across
+the web, you usually still have to URL encode them and pass them
+via a form parameter.
+
+Data::URIEncode allows for encoding and decoding complex (multi
+level datastructures) using native Query String manipulators (such
+as CGI.pm).  It takes complex data and turns it into a flat hashref
+which can then be turned into a URI query string using URL encoding.
+It also takes a flat hashref of data passed in and translates it
+back to a complex structure.
+
+One benefit of using Data::URIEncode is that a standard submission
+from a standard html form can automatically be translated into complex
+data even though it arrived in a "flat" form.  This somewhat mimics the
+abilities of XForms without introducing the complexity of XForms.
+
+=head1 RULES
+
+=head1 FUNCTIONS
+
+=over 4
+
+=item flat_to_complex
+
+Takes a hashref of simple key value pairs.  Returns a data structure based
+on the the parsed key value pairs.  The parsing proceeds according to the
+rules listed in RULES.
+
+=item complex_to_flat
+
+Takes a complex data structure and turns it into a flat hashref (single level
+key/value pairs only).  The parsing proceeds according to the rules listed in
+RULES.
+
+=item complex_to_query
+
+Similar to complex_to_flat, except that the flattened hashref is then translated
+into query string suitable for use in a URI.
+
+=item query_to_complex
+
+Takes one of a string, a reference to a string, a hash, or a CGI.pm compatible object
+and translates it into a complex data structure.  Similar to flat_to_complex, exempt
+that a first step is taken to access the query parameters from the CGI compatible object
+or string.  If a string or string ref is given, the CGI module is used to parse the string
+into an initial flat hash of key value pairs (using the param method).  If another module
+is desired over, CGI.pm you must initialize it with the data to be parsed prior to passing
+the object to the query_to_complex function.
+
+    my $data = query_to_complex("foo.bar:0=baz");
+
+    my $data = query_to_complex(\ "foo.bar:0=baz");
+
+    my $data = query_to_complex({"foo.bar:0" => "baz"}); # same as flat_to_complex
+
+    my $cgi  = CGI->new(\ "foo.bar:0=baz");
+    my $data = query_to_complex($cgi);
+
+    my $cgi  = CGI->new; # use the values passed in from STDIN
+    my $data = query_to_complex($cgi);
+
+=back
+
+=head1 VARIABLES
+
+=over 4
+
+=item C<$MAX_ARRAY_EXPAND>
+
+Default value is 100.  This variable is used to determine how large
+flat_to_complex will allow an array to be expanded beyond its current size.
+An array can grow as large as you have memory, but intermediate values must
+exist.
+
+Without this value, somebody could specify foo:1000000000000=bar and your server
+would attempt to set the 1000000000000th index of the foo value to bar.
+
+The string "foo:101=bar" would die, but the string "foo:50=bar&foo:101=baz" would not
+die because the intermediate foo->[50] increments the foo arrayref by 51 and the subsequent
+foo->[101] call increments the foo arrayref by only 51.
+
+=item C<$DUMP_BLESSED_DATA>
+
+Default is true.  If true, blessed hashrefs and arrayrefs will also be added to the
+flat data returned by complex_to_flat.  If false, bless hashrefs and arrayrefs will be
+skipped.
+
+=back
+
+=head1 BUGS
+
+Circular refs are not detected.  Any attempt to dump a struture with
+cirular refs will result in an infinite loop.  There is no immediate plan to
+add circular ref tracking.
 
 =head1 AUTHOR
 
