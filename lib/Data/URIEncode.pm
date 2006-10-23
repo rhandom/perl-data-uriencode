@@ -271,7 +271,137 @@ from a standard html form can automatically be translated into complex
 data even though it arrived in a "flat" form.  This somewhat mimics the
 abilities of XForms without introducing the complexity of XForms.
 
+Another benefit is that sparse data can be represented in a more
+compact form than JSON or YAML are able to provide.  However, complex data
+with long key names will be more verbose as the full data hierarchy
+must be repeated for each value.
+
 =head1 RULES
+
+For each of the following rules, the $data can be translated to
+$flat and $query by calling complex_to_flat and complex_to_query
+respectively.  The $flat and $query can be translated back into
+$data using flat_to_complex and query_to_complex respectively.
+
+=over 4
+
+=item Simple values stay simple
+
+    $data  =   {key => "val", key2 => "val2"};
+    $flat  === {key => "val", key2 => "val2"};
+    $query eq  "key=val&key2=val2"
+
+=item Nested hashes use a dot to modify the key.
+
+    $data  =   {key => {key2 => "val"}};
+    $flat  === {"key.key2" => "val"};
+    $query eq  "key.key2=val
+
+    ########
+
+    $data  =   {foo => {bar => {baz => "bling"}}};
+    $flat  === {"foo.bar.baz" = "bling"};
+    $query eq  "foo.bar.baz=bling"
+
+=item Nested arrays use a colon to modify the key.
+
+    $data  =   {key => ["val1", "val2"]};
+    $flat  === {"key:0" => "val1", "key:1" => "val2"};
+    $query eq  "key:0=val1&key1=val2"
+
+    ########
+
+    $data  =   {key => [ [ ["val"] ] ]};
+    $flat  === {"key:0:0" => "val"}
+    $query eq  "key:0:0=val"
+
+=item Data structures can have an arrayref as the top level
+
+A leading colon is used to indicate the top level node is an
+arrayref.
+
+    $data  =   ["val1", "val2"]
+    $flat  === {":0" => "val1", ":1" => "val2"}
+    $query eq  ":0=>val1&:1=>val2"
+
+    ########
+
+    $data  =   [ [ ["val"] ] ];
+    $flat  === {":0:0:0" => "val"}
+    $query eq  ":0:0:0=val"
+
+=item Keys in flat arrays MAY begin with a leading dot
+
+A leading dot may disambiguate some cases.
+
+    $query =   ".foo=bar"
+    $flat  =   {".foo" => "bar"}
+    $data  === {foo => "bar"}
+
+=item Single quotes may be used to enclose complex strings.
+
+Any key containing a colon ":", a dot ".", or a single quote "'"
+must be quoted with single quotes and have enclosed single quotes escaped.
+
+    $data  =   {"foo.bar"   => "baz"}
+    $flat  === {"'foo.bar'" => "baz"}
+    $query eq  "'foo.bar'=baz"  # the ' will be swapped with %27
+
+    ########
+
+    $data  =   {"foo:bar"   => "baz"}
+    $flat  === {"'foo:bar'" => "baz"}
+    $query eq  "'foo:bar'=baz"  # the ' will be swapped with %27
+
+    ########
+
+    $data  =   {""   => "baz"}
+    $flat  === {"''" => "baz"}
+    $query eq  "''=baz"  # the ' will be swapped with %27
+
+    ########
+
+    $data  =   {"'"     => "baz"}
+    $flat  === {"'\\''" => "baz"}
+    $query eq  "'\\''=baz"  # the ' will be swapped with %27 and the \ will be replaced with %5C
+
+Single quotes were chosen as double quotes are most commonly used
+in HTML forms, thus allowing escaped single quotes more easily inside the
+double quoted name.
+
+=item Undefined values are not included in the flattened data
+
+    $data  =   {foo => undef, bar => 1}
+    $flat  === {bar => 1}
+    $query eq  "bar=1"
+
+    ########
+
+    $data  =   ["val1", undef, "val2"]
+    $flat  === {":0" => "val1", ":2" => "val2"}
+    $query eq  ":0=val1&:2=val2"
+
+=item Blessed hashes and arrayrefs are dumped by default.
+
+Changing the default value of the global $DUMP_BLESSED_DATA variable changes
+the behavior.
+
+    $Data::URIEncode::DUMP_BLESSED_DATA = 1; # default
+    $data  =   {foo => bless({bar => "baz"}, "main"), one => "two"}
+    $flat  === {"foo.bar" => "baz", one => "two"}
+    $query eq  "foo.bar=baz&one=two"
+
+    ########
+
+    $Data::URIEncode::DUMP_BLESSED_DATA = 0;
+    $data  =   {foo => bless({bar => "baz"}, "main"), one => "two"}
+    $flat  === {one => "two"}
+    $query eq  "one=two"
+
+=item Arrays created by flat_to_complex and query_to_complex must
+obey the value of the $MAX_ARRAY_EXPAND variable.
+
+=back
 
 =head1 FUNCTIONS
 
@@ -283,16 +413,25 @@ Takes a hashref of simple key value pairs.  Returns a data structure based
 on the the parsed key value pairs.  The parsing proceeds according to the
 rules listed in RULES.
 
+    my $data = flat_to_complex({"foo.bar.baz:2" => "bling"});
+    # $data = {foo => {bar => {baz => [undef, undef, "bling"]}}};
+
 =item complex_to_flat
 
 Takes a complex data structure and turns it into a flat hashref (single level
 key/value pairs only).  The parsing proceeds according to the rules listed in
 RULES.
 
+    my $flat = complex_to_flat({foo => ['a','b']});
+    # $flat = {"foo:0" => "a", "foo:1" => "b"});
+
 =item complex_to_query
 
 Similar to complex_to_flat, except that the flattened hashref is then translated
 into query string suitable for use in a URI.
+
+    my $str = complex_to_query({foo => ['a','b']});
+    # $str eq "foo:0=a&foo:1=b"
 
 =item query_to_complex
 
