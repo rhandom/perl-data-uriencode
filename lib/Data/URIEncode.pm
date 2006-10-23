@@ -204,17 +204,26 @@ __END__
         baz => [123],
     };
 
-    my $flat = complex_to_flat($data);
+    my $flat  = complex_to_flat($data);
+    my $query = complex_to_query($data);
 
-    # $data looks like:
-    $data = {
+    # $flat looks like:
+    $flat = {
        'foo.bar' => 'bing',
        'baz:0'   => 123,
     };
 
+    # $query looks like:
+    $query = "foo.bar=bing&baz:0=123"
+
+    ################################################
+
     # put data back to how it was
     $data = flat_to_complex($flat);
 
+    $data = query_to_complex($query);
+
+    ################################################
 
     ### some html form somewhere
     <form>
