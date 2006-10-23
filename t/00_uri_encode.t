@@ -7,7 +7,7 @@
 =cut
 
 use strict;
-use Test::More tests => 92;
+use Test::More tests => 101;
 
 use_ok('Data::URIEncode', qw(flat_to_complex complex_to_flat query_to_complex complex_to_query));
 
@@ -114,14 +114,28 @@ ok(! eval { complex_to_flat(sub {}) },           "Couldn't flatten: ($@)");
 ok(! eval { complex_to_flat(undef) },            "Couldn't flatten: ($@)");
 ok(! eval { complex_to_flat('undef') },          "Couldn't flatten: ($@)");
 
+ok(complex_to_query(['a','b']) eq ':0=a&:1=b', ':0=a&:1=b');
+ok(complex_to_query({'a','b'}) eq 'a=b', 'a=b');
+ok(complex_to_query({x => {y => ['a','b'], z => 1}}) eq 'x.y:0=a&x.y:1=b&x.z=1', 'x.y:0=a&x.y:1=b&x.z=1');
+
 SKIP: {
-    skip("No CGI found", 6) if ! eval { require CGI };
+    skip("No CGI found", 9) if ! eval { require CGI };
 
-    ok(complex_to_query(['a','b']) eq ':0=a&:1=b', ':0=a&:1=b');
-    ok(complex_to_query({'a','b'}) eq 'a=b', 'a=b');
-    ok(complex_to_query({x => {y => ['a','b'], z => 1}}) eq 'x.y:0=a&x.y:1=b&x.z=1', 'x.y:0=a&x.y:1=b&x.z=1');
+    ok(query_to_complex(':0=a&:1=b'            )->[1]               eq 'b', 'str: :0=a&:1=b');
+    ok(query_to_complex('a=b'                  )->{'a'}             eq 'b', 'str: a=b');
+    ok(query_to_complex('x.y:0=a&x.y:1=b&x.z=1')->{'x'}->{'y'}->[1] eq 'b', 'str: x.y:0=a&x.y:1=b&x.z=1');
 
-    ok(query_to_complex(':0=a&:1=b'            )->[1]               eq 'b', ':0=a&:1=b');
-    ok(query_to_complex('a=b'                  )->{'a'}             eq 'b', 'a=b');
-    ok(query_to_complex('x.y:0=a&x.y:1=b&x.z=1')->{'x'}->{'y'}->[1] eq 'b', 'x.y:0=a&x.y:1=b&x.z=1');
+    ok(query_to_complex(\ ':0=a&:1=b'            )->[1]               eq 'b', 'str ref: :0=a&:1=b');
+    ok(query_to_complex(\ 'a=b'                  )->{'a'}             eq 'b', 'str ref: a=b');
+    ok(query_to_complex(\ 'x.y:0=a&x.y:1=b&x.z=1')->{'x'}->{'y'}->[1] eq 'b', 'str ref: x.y:0=a&x.y:1=b&x.z=1');
+
+    ok(query_to_complex(CGI->new(\ ':0=a&:1=b'            ))->[1]               eq 'b', 'CGI->new: :0=a&:1=b');
+    ok(query_to_complex(CGI->new(\ 'a=b'                  ))->{'a'}             eq 'b', 'CGI->new: a=b');
+    ok(query_to_complex(CGI->new(\ 'x.y:0=a&x.y:1=b&x.z=1'))->{'x'}->{'y'}->[1] eq 'b', 'CGI->new: x.y:0=a&x.y:1=b&x.z=1');
+
 };
+
+ok(query_to_complex({':0' => 'a', ':1' => 'b'}                   )->[1]               eq 'b', 'hashref: :0=a&:1=b');
+ok(query_to_complex({'a' => 'b'}                                 )->{'a'}             eq 'b', 'hashref: a=b');
+ok(query_to_complex({'x.y:0' =>'a', 'x.y:1' => 'b', 'x.z' => '1'})->{'x'}->{'y'}->[1] eq 'b', 'hashref: x.y:0=a&x.y:1=b&x.z=1');
+
