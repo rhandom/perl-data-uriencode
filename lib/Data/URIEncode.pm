@@ -316,7 +316,7 @@ $data using flat_to_complex and query_to_complex respectively.
 
     $data  =   {key => ["val1", "val2"]};
     $flat  === {"key:0" => "val1", "key:1" => "val2"};
-    $query eq  "key:0=val1&key1=val2"
+    $query eq  "key:0=val1&key:1=val2"
 
     ########
 
@@ -339,7 +339,7 @@ arrayref.
     $flat  === {":0:0:0" => "val"}
     $query eq  ":0:0:0=val"
 
-=item Keys in flat arrays MAY begin with a leading dot
+=item Keys in flat hashrefs MAY begin with a leading dot
 
 A leading dot may disambiguate some cases.
 
