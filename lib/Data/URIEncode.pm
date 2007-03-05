@@ -45,9 +45,6 @@ sub flat_to_complex {
             if (ref $ref eq 'ARRAY') {
                 if (! exists $ref->[$name]) {
                     $ref->[$name] = $sep eq ':' ? [] : {};
-                } else {
-                    die "Can't coerce array into hash near \"$name\" while unfolding $key"
-                        if $sep ne ':';
                 }
                 die "Can't use $name as index value for an array while unfolding $key"
                     if $name !~ /^\d+$/;
