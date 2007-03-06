@@ -17,7 +17,7 @@ use vars qw($VERSION
             );
 
 BEGIN {
-    $VERSION           = '0.10';
+    $VERSION           = '0.11';
     @EXPORT_OK         = qw(flat_to_complex complex_to_flat query_to_complex complex_to_query);
     $MAX_ARRAY_EXPAND  = 100;
     $DUMP_BLESSED_DATA = 1 if ! defined $DUMP_BLESSED_DATA;
@@ -109,7 +109,8 @@ sub complex_to_flat {
         }
     } elsif (UNIVERSAL::isa($in, 'HASH')) {
         die "Not handling blessed HASH" if ref $in ne 'HASH' && ! $DUMP_BLESSED_DATA;
-        while (my($key, $val) = each %$in) {
+        foreach my $key (keys %$in) {
+            my $val = $in->{$key};
             if (ref $val) {
                 complex_to_flat($val, $out, "$prefix."._flatten_escape($key));
             } else {
